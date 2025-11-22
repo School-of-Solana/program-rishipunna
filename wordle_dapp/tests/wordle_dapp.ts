@@ -1030,6 +1030,108 @@ describe("wordle_dapp", () => {
         "correct_char_not_pos array should be defined"
       );
     });
+
+    it("Should correctly set correctCharNotPos when solution letters are in wrong positions", async () => {
+      // Create a new game for this test
+      const testUser = anchor.web3.Keypair.generate();
+      await airdrop(provider.connection, testUser.publicKey);
+
+      const [pda_key, pda_bump] = getPDAAddress(
+        WORDLE_SEED,
+        testUser.publicKey,
+        program.programId
+      );
+
+      await program.methods
+        .createSeed()
+        .accounts({
+          signer: testUser.publicKey,
+          game: pda_key,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([testUser])
+        .rpc({ commitment: "confirmed" });
+
+      // Get the solution from PDA
+      const gameDataBefore = await program.account.newGame.fetch(pda_key);
+      const solution = gameDataBefore.solution;
+
+      // Pick two letters from the solution
+      // We'll pick letters from positions 0 and 1
+      const letter1 = solution[0];
+      const letter2 = solution[1];
+
+      // Create a guess where:
+      // - letter1 is placed at position 1 (where letter2 should be) - wrong position
+      // - letter2 is placed at position 0 (where letter1 should be) - wrong position
+      // - Fill positions 2-4 with letters that don't exist in solution
+      let guess = ["", "", "", "", ""];
+
+      // Place the two letters at wrong positions
+      guess[0] = letter2; // letter2 at position 0 (wrong position, should be letter1)
+      guess[1] = letter1; // letter1 at position 1 (wrong position, should be letter2)
+
+      // Fill remaining positions with letters not in solution
+      const allLetters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      let fillerIndex = 0;
+      for (let i = 2; i < 5; i++) {
+        // Find a letter that's not in the solution
+        while (
+          fillerIndex < allLetters.length &&
+          solution.includes(allLetters[fillerIndex])
+        ) {
+          fillerIndex++;
+        }
+        if (fillerIndex < allLetters.length) {
+          guess[i] = allLetters[fillerIndex];
+          fillerIndex++;
+        } else {
+          // Fallback: use a letter that's different from solution[i]
+          guess[i] = solution[i] === "A" ? "B" : "A";
+        }
+      }
+
+      const guessWord = guess.join("");
+
+      // Make the guess
+      await program.methods
+        .progressGame(guessWord)
+        .accounts({
+          signer: testUser.publicKey,
+          game: pda_key,
+          systemProgram: anchor.web3.SystemProgram.programId,
+        })
+        .signers([testUser])
+        .rpc({ commitment: "confirmed" });
+
+      const gameDataAfter = await program.account.newGame.fetch(pda_key);
+
+      // Verify that correctCharNotPos is true at positions 0 and 1
+      // Position 0 has letter2 (which exists in solution at position 1, so wrong position)
+      // Position 1 has letter1 (which exists in solution at position 0, so wrong position)
+      assert.strictEqual(
+        gameDataAfter.correctCharNotPos[0][0],
+        true,
+        `Position 0 should have correctCharNotPos=true because '${letter2}' exists in solution but at wrong position (solution has '${letter1}' at position 0)`
+      );
+      assert.strictEqual(
+        gameDataAfter.correctCharNotPos[0][1],
+        true,
+        `Position 1 should have correctCharNotPos=true because '${letter1}' exists in solution but at wrong position (solution has '${letter2}' at position 1)`
+      );
+
+      // Verify that correctCharPos is false at these positions (since they're wrong positions)
+      assert.strictEqual(
+        gameDataAfter.correctCharPos[0][0],
+        false,
+        "Position 0 should have correctCharPos=false because letter is at wrong position"
+      );
+      assert.strictEqual(
+        gameDataAfter.correctCharPos[0][1],
+        false,
+        "Position 1 should have correctCharPos=false because letter is at wrong position"
+      );
+    });
   });
 
   describe("Remove Game (remove_game)", () => {

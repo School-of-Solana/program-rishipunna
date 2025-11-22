@@ -31,7 +31,7 @@ pub fn progression(ctx: Context<Progression>, guess: String) -> Result<()> {
         } else {
             for j in 0..5 {
                 if game.solution.chars().nth(j) == curr_guess_char {
-                    game.correct_char_not_pos[curr_try][j] = true;
+                    game.correct_char_not_pos[curr_try][i] = true;
                 }
             }
         }
