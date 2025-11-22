@@ -3,9 +3,8 @@
 import { PublicKey } from '@solana/web3.js'
 import { useMemo } from 'react'
 import { useParams } from 'next/navigation'
-import { ExplorerLink } from '../cluster/cluster-ui'
 import { useCluster } from '../cluster/cluster-data-access'
-import { AccountBalance, AccountButtons, AccountTransactions } from './account-ui'
+import { AccountButtons, AccountTransactions } from './account-ui'
 import { ellipsify } from '@/lib/utils'
 import { toast } from 'sonner'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardAction } from '@/components/ui/card'
@@ -18,21 +17,25 @@ export default function AccountDetailFeature() {
   const params = useParams()
   const address = useMemo(() => {
     if (!params.address) {
-      return
+      return null
     }
     try {
       return new PublicKey(params.address)
     } catch (e) {
       toast(`invalid public key: ${e}`)
+      return null
     }
   }, [params])
+
+  // All hooks must be called unconditionally before any early returns
+  const { getExplorerUrl } = useCluster()
+  const balanceQuery = useGetBalance({ address })
+  const transactionsQuery = useGetSignatures({ address })
+
   if (!address) {
     return <div>Error loading account</div>
   }
 
-  const { getExplorerUrl } = useCluster()
-  const balanceQuery = useGetBalance({ address })
-  const transactionsQuery = useGetSignatures({ address })
   const balance = balanceQuery.data ? Math.round((balanceQuery.data / LAMPORTS_PER_SOL) * 100000) / 100000 : 0
 
   const copyToClipboard = () => {
@@ -78,11 +81,7 @@ export default function AccountDetailFeature() {
                     >
                       <Copy className="h-4 w-4" />
                     </Button>
-                    <a
-                      href={getExplorerUrl(`account/${address}`)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
+                    <a href={getExplorerUrl(`account/${address}`)} target="_blank" rel="noopener noreferrer">
                       <Button variant="ghost" size="icon" className="h-8 w-8" title="View on explorer">
                         <ExternalLink className="h-4 w-4" />
                       </Button>

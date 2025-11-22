@@ -1,27 +1,32 @@
 'use client'
 
 import { useConnection } from '@solana/wallet-adapter-react'
-import {
-  LAMPORTS_PER_SOL,
-  PublicKey,
-} from '@solana/web3.js'
+import { LAMPORTS_PER_SOL, PublicKey } from '@solana/web3.js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
-export function useGetBalance({ address }: { address: PublicKey }) {
+export function useGetBalance({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection()
 
   return useQuery({
     queryKey: ['get-balance', { endpoint: connection.rpcEndpoint, address }],
-    queryFn: () => connection.getBalance(address),
+    queryFn: () => {
+      if (!address) throw new Error('Address is required')
+      return connection.getBalance(address)
+    },
+    enabled: !!address,
   })
 }
 
-export function useGetSignatures({ address }: { address: PublicKey }) {
+export function useGetSignatures({ address }: { address: PublicKey | null }) {
   const { connection } = useConnection()
 
   return useQuery({
     queryKey: ['get-signatures', { endpoint: connection.rpcEndpoint, address }],
-    queryFn: () => connection.getSignaturesForAddress(address),
+    queryFn: () => {
+      if (!address) throw new Error('Address is required')
+      return connection.getSignaturesForAddress(address)
+    },
+    enabled: !!address,
   })
 }
 
@@ -41,7 +46,7 @@ export function useRequestAirdrop({ address }: { address: PublicKey }) {
       await connection.confirmTransaction({ signature, ...latestBlockhash }, 'confirmed')
       return signature
     },
-    onSuccess: async (signature) => {
+    onSuccess: async () => {
       await Promise.all([
         client.invalidateQueries({
           queryKey: ['get-balance', { endpoint: connection.rpcEndpoint, address }],

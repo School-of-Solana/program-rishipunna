@@ -5,24 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { useWallet } from '@solana/wallet-adapter-react'
 import { RotateCcw, DoorOpen } from 'lucide-react'
+import { GameData } from './counter-data-access'
+import { useQueryClient } from '@tanstack/react-query'
 
-export function WordleAction() {
-  const { initialize, exitGameMutation, gameQuery } = useCounterProgram()
+export function WordleAction({ gameData }: { gameData: GameData | null }) {
+  const { initialize, exitGameMutation } = useCounterProgram()
   const { publicKey } = useWallet()
-
+  const queryClient = useQueryClient()
   const { mutateAsync: mutateInitialize, isPending: isCreating } = initialize
   const { mutateAsync: mutateExitGame, isPending: isExiting } = exitGameMutation
-  const { data: gameData, isLoading: isLoadingGame } = gameQuery
-
-  // Check if game exists:
-  // - Query must not be in error state (account exists)
-  // - Solution must be non-empty (actual game data, not default)
-  const hasGame =
-    !gameQuery.isError &&
-    gameQuery.data &&
-    gameQuery.data.solution &&
-    gameQuery.data.solution.length > 0 &&
-    gameQuery.data.solution !== ''
 
   const handleCreate = async () => {
     await mutateInitialize()
@@ -44,15 +35,14 @@ export function WordleAction() {
     // Exit: remove the game
     try {
       await mutateExitGame()
-      // Force refetch to update UI immediately
-      await gameQuery.refetch()
+      await queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58()] })
     } catch (error) {
       console.error('Exit failed:', error)
     }
   }
 
   // No game exists - show only Create button
-  if (!hasGame) {
+  if (!gameData) {
     return (
       <div className="flex justify-center gap-2">
         <Button onClick={handleCreate} disabled={isCreating || !publicKey}>

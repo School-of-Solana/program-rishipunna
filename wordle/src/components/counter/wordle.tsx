@@ -1,23 +1,43 @@
-import React, { useContext } from 'react'
+import React from 'react'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useCounterProgram } from './counter-data-access'
 import { useWallet } from '@solana/wallet-adapter-react'
 import clsx from 'clsx'
 import { WordleAction } from './wordle-action'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Delete, CornerDownLeft, Gamepad2 } from 'lucide-react'
 import { useConfettiSideCannons, useConfettiEmoji } from '@/components/ui/confetti'
 import { Empty } from '@/components/ui/empty'
+import { Button } from '@/components/ui/button'
+import { WordleSkeleton } from './wordle-skeleton'
 
 export function WordleGame() {
-  const { gameQuery, progressGameMutation } = useCounterProgram()
+  const { useGameQuery, progressGameMutation } = useCounterProgram()
   const [currentGuess, setCurrentGuess] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [revealIndex, setRevealIndex] = useState(-1)
   const { publicKey } = useWallet()
+
+  const { data: gameData, isLoading: isLoadingGame, isError: isErrorGame } = useGameQuery()
+
+  if (isLoadingGame) return <WordleSkeleton />
+
+  if (isErrorGame) return null
+
+  // Show empty state if no game exists
+  if (!gameData) {
+    return (
+      <div className="container mx-auto">
+        <Empty
+          icon={<Gamepad2 className="h-12 w-12" />}
+          title="No game found"
+          description="Create a new Wordle game to start playing. You'll have 6 tries to guess the 5-letter word!"
+          action={<WordleAction gameData={null} />}
+        />
+      </div>
+    )
+  }
 
   const submitGuess = async () => {
     if (isSubmitting) return
@@ -33,56 +53,12 @@ export function WordleGame() {
       await progressGameMutation.mutateAsync({
         guess: currentGuess,
       })
-    } catch (error) {
+    } catch {
       toast('Guess submission cancelled..')
     }
 
     setCurrentGuess('')
     setIsSubmitting(false)
-  }
-
-  // ⭐ Reveal animation when tries increases
-  useEffect(() => {
-    if (!gameQuery.data) return
-    if (gameQuery.data.tries === 0) return
-
-    setRevealIndex((gameQuery.data.tries - 1) * 5) // start revealing new row
-
-    const int = setInterval(() => {
-      setRevealIndex((idx) => {
-        if (idx >= gameQuery.data.tries * 5 - 1) {
-          clearInterval(int)
-          return -1 // stop animation
-        }
-        return idx + 1
-      })
-    }, 250) // tile delay
-
-    return () => clearInterval(int)
-  }, [gameQuery.data.tries])
-
-  if (gameQuery.isLoading) return <div>Loading game...</div>
-
-  // Check if game exists: has a solution (non-empty string) and query is not in error
-  const hasGame =
-    !gameQuery.isError &&
-    gameQuery.data &&
-    gameQuery.data.solution &&
-    gameQuery.data.solution.length > 0 &&
-    gameQuery.data.solution !== ''
-
-  // Show empty state if no game exists
-  if (!hasGame) {
-    return (
-      <div className="container mx-auto">
-        <Empty
-          icon={<Gamepad2 className="h-12 w-12" />}
-          title="No game found"
-          description="Create a new Wordle game to start playing. You'll have 6 tries to guess the 5-letter word!"
-          action={<WordleAction />}
-        />
-      </div>
-    )
   }
 
   return (
@@ -91,14 +67,13 @@ export function WordleGame() {
         {/* Game Grid Card */}
         <Card className="border-none bg-transparent">
           <CardContent className="space-y-4">
-            <WordleAction />
+            <WordleAction gameData={gameData} />
             <WordGrid
-              tries={gameQuery.data?.tries}
-              correctPos={gameQuery.data?.correctCharPos}
-              correctNotPos={gameQuery.data?.correctCharNotPos}
-              guesses={gameQuery.data?.guesses}
+              tries={gameData?.tries}
+              correctPos={gameData?.correctCharPos}
+              correctNotPos={gameData?.correctCharNotPos}
+              guesses={gameData?.guesses}
               currentGuess={currentGuess}
-              revealIndex={revealIndex}
             />
           </CardContent>
         </Card>
@@ -107,9 +82,9 @@ export function WordleGame() {
         <Card>
           <CardContent>
             <Keyboard
-              correctPos={gameQuery.data?.correctCharPos}
-              correctNotPos={gameQuery.data?.correctCharNotPos}
-              guesses={gameQuery.data?.guesses}
+              correctPos={gameData?.correctCharPos}
+              correctNotPos={gameData?.correctCharNotPos}
+              guesses={gameData?.guesses}
               onKeyPress={(letter: string) => {
                 if (currentGuess.length < 5) {
                   setCurrentGuess((g) => g + letter)
@@ -118,18 +93,18 @@ export function WordleGame() {
               onBackspace={() => setCurrentGuess((g) => g.slice(0, -1))}
               onEnter={submitGuess}
             />
-            <GameStatus game={gameQuery.data} />
+            <GameStatus game={gameData} />
           </CardContent>
         </Card>
       </div>
 
-      {!gameQuery.data?.isSolved && gameQuery.data?.tries < 6 && (
+      {!gameData?.isSolved && gameData?.tries < 6 && (
         <WordInput
           currentGuess={currentGuess}
           setCurrentGuess={setCurrentGuess}
           onSubmit={submitGuess}
           disabled={isSubmitting}
-          gameQuery={gameQuery}
+          isGameLoading={isLoadingGame}
         />
       )}
     </div>
@@ -142,17 +117,14 @@ export function WordGrid({
   correctNotPos,
   currentGuess,
   tries,
-  revealIndex,
 }: {
   guesses: string[]
   correctPos: boolean[][]
   correctNotPos: boolean[][]
   currentGuess: string
   tries: number
-  revealIndex: number
 }) {
   const totalRows = 6
-  const [showContent, setShowContent] = useState(false)
 
   return (
     <div className="grid grid-rows-6 gap-1.5 items-center justify-center">
@@ -352,14 +324,21 @@ export function WordInput({
   setCurrentGuess,
   onSubmit,
   disabled,
-  gameQuery,
+  isGameLoading,
 }: {
   currentGuess: string
   setCurrentGuess: (guess: string | ((g: string) => string)) => void
   onSubmit: (guess: string) => void
   disabled: boolean
-  gameQuery: any
+  isGameLoading: boolean
 }) {
+  const handleSubmit = useCallback(
+    (guess: string) => {
+      onSubmit(guess)
+    },
+    [onSubmit],
+  )
+
   useEffect(() => {
     if (disabled) return
     const handler = (e: KeyboardEvent) => {
@@ -373,19 +352,19 @@ export function WordInput({
         setCurrentGuess((g: string) => g.slice(0, -1))
       }
 
-      if (key === 'ENTER' && currentGuess.length === 5 && !gameQuery.isLoading) {
-        onSubmit(currentGuess)
+      if (key === 'ENTER' && currentGuess.length === 5 && !isGameLoading) {
+        handleSubmit(currentGuess)
       }
     }
 
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [currentGuess, disabled])
+  }, [currentGuess, disabled, isGameLoading, setCurrentGuess, handleSubmit])
 
   return null
 }
 
-export function GameStatus({ game }: { game: any }) {
+export function GameStatus({ game }: { game: { isSolved: boolean; tries: number; solution: string } }) {
   const { fire: fireSuccessConfetti } = useConfettiSideCannons()
   const { fire: fireFailConfetti } = useConfettiEmoji()
   const [hasFiredConfetti, setHasFiredConfetti] = useState(false)

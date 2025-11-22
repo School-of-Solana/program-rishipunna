@@ -1,16 +1,13 @@
 // 'use client'
 
-import { useEffect, useState } from 'react'
 import { getCounterProgram, getCounterProgramId } from '@/anchor/counter-exports'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
-import { Cluster, Keypair, PublicKey } from '@solana/web3.js'
+import { Cluster, PublicKey } from '@solana/web3.js'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useCluster } from '../cluster/cluster-data-access'
 import { useAnchorProvider } from '../solana/solana-provider'
-import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
-import { web3 } from '@coral-xyz/anchor'
 
 export interface GameData {
   player: PublicKey
@@ -28,55 +25,28 @@ export function useCounterProgram() {
 
   const { connection } = useConnection()
   const { cluster } = useCluster()
-  const transactionToast = useTransactionToast()
   const provider = useAnchorProvider()
   const programId = useMemo(() => getCounterProgramId(cluster.network as Cluster), [cluster])
   const program = useMemo(() => getCounterProgram(provider, programId), [provider, programId])
   const wordle_seed = 'WORDLE_DAPP'
   const utils = useQueryClient()
 
-  // -------------------------
-  // Fetch the game PDA
-  // -------------------------
-
-  const defaultGameData: GameData = {
-    player: Keypair.generate().publicKey,
-    solution: '',
-    tries: 0,
-    isSolved: false,
-    correctCharPos: Array(6).fill(Array(5).fill(false)),
-    correctCharNotPos: Array(6).fill(Array(5).fill(false)),
-    guesses: Array(6).fill(''),
-  }
-
-  const gameQuery = useQuery<GameData>({
-    queryKey: ['game', publicKey?.toBase58(), programId.toBase58()],
-    queryFn: async () => {
-      if (!publicKey) throw new Error('Wallet not connected')
-      const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
-      try {
-        return await program.account.newGame.fetch(gamePda)
-      } catch (error: any) {
-        // If account doesn't exist, return default data
-        if (error.message?.includes('Account does not exist') || error.message?.includes('not found')) {
-          return defaultGameData
+  function useGameQuery() {
+    return useQuery<GameData | null>({
+      queryKey: ['game', publicKey?.toBase58(), programId.toBase58()],
+      queryFn: async () => {
+        if (!publicKey) throw new Error('Wallet not connected')
+        const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
+        try {
+          return await program.account.newGame.fetch(gamePda)
+        } catch {
+          return null
         }
-        throw error
-      }
-    },
-    enabled: !!publicKey && !!program,
-    refetchOnWindowFocus: false,
-    initialData: defaultGameData,
-  })
-
-  useEffect(() => {
-    gameQuery.refetch()
-  }, [publicKey])
-
-  const getProgramAccount = useQuery({
-    queryKey: ['get-program-account', { cluster }],
-    queryFn: () => connection.getParsedAccountInfo(programId),
-  })
+      },
+      enabled: !!publicKey && !!program,
+      refetchOnWindowFocus: false,
+    })
+  }
 
   // -------------------------
   // Initialize game
@@ -94,7 +64,7 @@ export function useCounterProgram() {
         toast.error('Game already exists. Exit it before creating a new one.')
       }
     },
-    onSuccess: async (tx) => {
+    onSuccess: async () => {
       toast.success('Game created!')
       queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
@@ -118,7 +88,10 @@ export function useCounterProgram() {
     onSuccess: async () => {
       toast.success('Game exited!')
     },
-    onError: (err: any) => toast.error(err.message || 'Failed to exit game'),
+    onError: (err: unknown) => {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to exit game'
+      toast.error(errorMessage)
+    },
   })
 
   // -------------------------
@@ -144,13 +117,14 @@ export function useCounterProgram() {
 
       return tx
     },
-    onSuccess: async (tx) => {
+    onSuccess: async () => {
       toast.success('Guess sent')
       await utils.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       // console.error("progressGameMutation error:", err);
-      toast.error(err.message || 'Failed to submit guess')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to submit guess'
+      toast.error(errorMessage)
     },
   })
 
@@ -158,10 +132,9 @@ export function useCounterProgram() {
     program,
     programId,
     publicKey,
-    gameQuery,
     initialize,
     exitGameMutation,
     progressGameMutation,
-    getProgramAccount,
+    useGameQuery,
   }
 }
