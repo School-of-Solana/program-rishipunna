@@ -12,23 +12,6 @@ import { useTransactionToast } from '../use-transaction-toast'
 import { toast } from 'sonner'
 import { web3 } from '@coral-xyz/anchor'
 
-// interface GameData{
-//   player: PublicKey;
-//   solution: string;
-//   tries: number;
-//   isSolved: boolean;
-//   correctCharPos: boolean[][];
-//   correctCharNotPos: boolean[][];
-//   guesses: string[];
-// }
-
-// import { useMemo } from "react";
-// import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-// import { useConnection, useAnchorProvider, useWallet } from "@solana/wallet-adapter-react";
-// import { PublicKey, Keypair } from "@solana/web3.js";
-// import { toast } from "react-hot-toast";
-// import { getCounterProgramId, getCounterProgram } from "../utils/programs";
-
 export interface GameData {
   player: PublicKey
   solution: string
@@ -40,16 +23,8 @@ export interface GameData {
 }
 
 export function useCounterProgram() {
-  // const { connection } = useConnection();
-  // const provider = useAnchorProvider();
   const { publicKey } = useWallet()
   const queryClient = useQueryClient()
-
-  // const cluster = "devnet"; // or use your cluster hook
-  // const wordle_seed = "WORDLE_DAPP";
-
-  // const programId = useMemo(() => getCounterProgramId(cluster), [cluster]);
-  // const program = useMemo(() => getCounterProgram(provider, programId), [provider, programId]);
 
   const { connection } = useConnection()
   const { cluster } = useCluster()
@@ -131,10 +106,12 @@ export function useCounterProgram() {
       const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
       const accountInfo = await connection.getAccountInfo(gamePda)
       if (!accountInfo) toast.error('Game does not exist!')
-      return program.methods
-        .removeGame()
-        .accounts({ signer: publicKey, game: gamePda, system_program: web3.SystemProgram.programId })
-        .rpc()
+      else {
+        return program.methods
+          .removeGame()
+          .accounts({ signer: publicKey, game: gamePda, system_program: web3.SystemProgram.programId })
+          .rpc()
+      }
     },
     onSuccess: async () => {
       toast.success('Game removed!')

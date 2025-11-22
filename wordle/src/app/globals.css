@@ -131,11 +131,10 @@
   @apply !px-2 !py-[6px] !rounded-md !text-sm !font-semibold !shadow-sm !transition-all;
 }
 
-
 @theme {
   --animate-tile-bounce: tile-bounce 0.5s forwards;
 
-  @keyframes tile-bounce{
+  @keyframes tile-bounce {
     0% {
       border-radius: 50%;
       background-color: #1f2937;
@@ -155,4 +154,14 @@
     }
   }
 
+  --animate-reveal-animation: reveal-animation 2s forwards;
+
+  @keyframes reveal-animation {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
 }

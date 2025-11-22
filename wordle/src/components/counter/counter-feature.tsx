@@ -14,17 +14,8 @@ export default function CounterFeature() {
   const { programId } = useCounterProgram()
 
   return publicKey ? (
-    <div className='grid items-center justify-center gap-2  '>
-      {/* <AppHero
-        title="WORDLE"
-      >
-        <p className="mb-6">
-          <ExplorerLink path={`account/${programId}`} label={ellipsify(programId.toString())} />
-        </p>
-      </AppHero> */}
-      {/* <CounterCreate /> */}
-      
-      <WordleGame/>
+    <div className="grid items-center justify-center gap-2  ">
+      <WordleGame />
     </div>
   ) : (
     <div className="max-w-4xl mx-auto">
