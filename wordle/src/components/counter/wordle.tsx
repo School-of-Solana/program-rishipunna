@@ -74,7 +74,7 @@ export function WordleGame() {
   // Show empty state if no game exists
   if (!hasGame) {
     return (
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto">
         <Empty
           icon={<Gamepad2 className="h-12 w-12" />}
           title="No game found"
@@ -87,10 +87,10 @@ export function WordleGame() {
 
   return (
     <div className="container mx-auto px-4 py-4">
-      <div className="grid gap-4  items-start">
+      <div className="grid gap-4 items-start">
         {/* Game Grid Card */}
-        <Card className="py-4 bg-transparent border-none">
-          <CardContent className="space-y-4 ">
+        <Card className="border-none bg-transparent">
+          <CardContent className="space-y-4">
             <WordleAction />
             <WordGrid
               tries={gameQuery.data?.tries}
@@ -104,8 +104,8 @@ export function WordleGame() {
         </Card>
 
         {/* Keyboard and Status Card */}
-        <Card className="py-4 self-center w-full max-w-full">
-          <CardContent className="space-y-4 px-2 sm:px-4">
+        <Card>
+          <CardContent>
             <Keyboard
               correctPos={gameQuery.data?.correctCharPos}
               correctNotPos={gameQuery.data?.correctCharNotPos}
@@ -171,7 +171,8 @@ export function WordGrid({
           >
             {Array.from({ length: 5 }).map((_, col) => {
               let letter = ''
-              let bg = 'bg-gray-800 rounded-full'
+              let bg = 'bg-gray-200 dark:bg-gray-800 rounded-full'
+              let textColor = 'text-gray-900 dark:text-gray-100'
               // const isRevealedTile = isPastGuess && rowIndex === tries - 1;
               let delay = 0 // seconds
               if (rowIndex === tries - 1) delay = 0.4 * col
@@ -179,14 +180,16 @@ export function WordGrid({
               if (isPastGuess) {
                 // Completed guess
                 letter = guess[col]
+                textColor = 'text-white dark:text-white'
                 if (correctPos[rowIndex][col]) bg = 'animate-tile-bounce'
                 else if (correctNotPos[rowIndex][col]) bg = 'animate-tile-bounce'
                 else bg = 'animate-tile-bounce'
               }
 
               if (isCurrentRow) {
-                // Current guess (uncolored)
-                bg = 'bg-gray-80 rounded-full'
+                // Current guess (uncolored) - transparent background
+                bg = 'bg-transparent dark:bg-transparent border-2 border-gray-400 dark:border-gray-600 rounded-full'
+                textColor = 'text-gray-900 dark:text-gray-100'
                 letter = currentGuess[col] || ''
               }
 
@@ -196,8 +199,9 @@ export function WordGrid({
                 <div
                   key={col}
                   className={clsx(
-                    'size-10 sm:size-11 md:size-12 border border-border flex items-center justify-center text-lg font-bold uppercase transition-all duration-500 rounded-full',
+                    'size-10 sm:size-11 md:size-12 border border-gray-300 dark:border-gray-700 flex items-center justify-center text-lg font-bold uppercase transition-all duration-500 rounded-full shadow-sm',
                     bg,
+                    textColor,
                     rowIndex == tries - 1 ? `delay-${col * 100}` : '',
                   )}
                   style={
@@ -207,7 +211,7 @@ export function WordGrid({
                         ? '#16a34a' // green-600
                         : correctNotPos[rowIndex][col]
                           ? '#ca8a04' // yellow-600
-                          : '#4a5565', // gray-600
+                          : '#78716c', // gray-600 (better for light mode)
                       '--final-shape': correctPos[rowIndex][col]
                         ? '20%' // green-600
                         : correctNotPos[rowIndex][col]
@@ -272,7 +276,7 @@ export function Keyboard({
     if (green.has(letter)) return 'animate-tile-bounce'
     if (yellow.has(letter)) return 'animate-tile-bounce'
     if (gray.has(letter)) return 'animate-tile-bounce'
-    return 'bg-muted rounded-full'
+    return 'bg-gray-100 dark:bg-muted border-gray-300 dark:border-border rounded-full'
   }
 
   return (
@@ -293,11 +297,11 @@ export function Keyboard({
                 {
                   animationDelay: '2s',
                   '--final-color': green.has(letter)
-                    ? '#00a63e'
+                    ? '#16a34a' // green-600
                     : yellow.has(letter)
-                      ? '#d08700'
+                      ? '#ca8a04' // yellow-600
                       : gray.has(letter)
-                        ? '#e7000b'
+                        ? '#78716c' // gray-600 (better for light mode)
                         : 'transparent',
                   '--final-shape': green.has(letter)
                     ? '20%'

@@ -28,15 +28,20 @@ pub fn progression(ctx: Context<Progression>, guess: String) -> Result<()> {
         let curr_guess_char = uc_guess.chars().nth(i);
         if game.solution.chars().nth(i) == curr_guess_char {
             game.correct_char_pos[curr_try][i] = true;
-        } else {
+        }
+    }
+    for i in 0..5 {
+        let curr_guess_char = uc_guess.chars().nth(i);
+        if !game.correct_char_pos[curr_try][i] {
             for j in 0..5 {
-                if game.solution.chars().nth(j) == curr_guess_char {
+                if game.solution.chars().nth(j) == curr_guess_char
+                    && !game.correct_char_pos[curr_try][j]
+                {
                     game.correct_char_not_pos[curr_try][i] = true;
                 }
             }
         }
     }
-
     Ok(())
 }
 
