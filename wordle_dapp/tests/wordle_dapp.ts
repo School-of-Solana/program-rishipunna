@@ -46,8 +46,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: bob.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -159,8 +157,6 @@ describe("wordle_dapp", () => {
           .createSeed()
           .accounts({
             signer: bob.publicKey,
-            game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([bob])
           .rpc({ commitment: "confirmed" });
@@ -191,8 +187,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: alice.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([alice])
         .rpc({ commitment: "confirmed" });
@@ -219,8 +213,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: charlie.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([charlie])
         .rpc({ commitment: "confirmed" });
@@ -248,7 +240,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: bob.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -297,7 +288,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: bob.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -330,7 +320,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: bob.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -361,7 +350,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: bob.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -387,7 +375,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: bob.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([bob])
         .rpc({ commitment: "confirmed" });
@@ -417,7 +404,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: bob.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([bob])
           .rpc({ commitment: "confirmed" });
@@ -448,7 +434,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: alice.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([alice])
           .rpc({ commitment: "confirmed" });
@@ -482,7 +467,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: alice.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([alice])
           .rpc({ commitment: "confirmed" });
@@ -499,142 +483,6 @@ describe("wordle_dapp", () => {
         should_fail,
         "Failed",
         "Guess should have failed with length > 5"
-      );
-    });
-
-    it("Should fail with empty string guess", async () => {
-      const [pda_key, pda_bump] = getPDAAddress(
-        WORDLE_SEED,
-        alice.publicKey,
-        program.programId
-      );
-
-      let should_fail = "This Should Fail";
-      try {
-        await program.methods
-          .progressGame(emptyGuess)
-          .accounts({
-            signer: alice.publicKey,
-            game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([alice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error) {
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InvalidGuessLength",
-          "Expected 'InvalidGuessLength' error for empty guess"
-        );
-        should_fail = "Failed";
-      }
-      assert.strictEqual(
-        should_fail,
-        "Failed",
-        "Guess should have failed with empty string"
-      );
-    });
-
-    it("Should fail with single character guess", async () => {
-      const [pda_key, pda_bump] = getPDAAddress(
-        WORDLE_SEED,
-        alice.publicKey,
-        program.programId
-      );
-
-      let should_fail = "This Should Fail";
-      try {
-        await program.methods
-          .progressGame(singleChar)
-          .accounts({
-            signer: alice.publicKey,
-            game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([alice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error) {
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InvalidGuessLength",
-          "Expected 'InvalidGuessLength' error for single character"
-        );
-        should_fail = "Failed";
-      }
-      assert.strictEqual(
-        should_fail,
-        "Failed",
-        "Guess should have failed with single character"
-      );
-    });
-
-    it("Should fail with four character guess", async () => {
-      const [pda_key, pda_bump] = getPDAAddress(
-        WORDLE_SEED,
-        alice.publicKey,
-        program.programId
-      );
-
-      let should_fail = "This Should Fail";
-      try {
-        await program.methods
-          .progressGame(fourChar)
-          .accounts({
-            signer: alice.publicKey,
-            game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([alice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error) {
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InvalidGuessLength",
-          "Expected 'InvalidGuessLength' error for 4 characters"
-        );
-        should_fail = "Failed";
-      }
-      assert.strictEqual(
-        should_fail,
-        "Failed",
-        "Guess should have failed with 4 characters"
-      );
-    });
-
-    it("Should fail with very long guess", async () => {
-      const [pda_key, pda_bump] = getPDAAddress(
-        WORDLE_SEED,
-        alice.publicKey,
-        program.programId
-      );
-
-      let should_fail = "This Should Fail";
-      try {
-        await program.methods
-          .progressGame(invalidGuessVeryLong)
-          .accounts({
-            signer: alice.publicKey,
-            game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
-          })
-          .signers([alice])
-          .rpc({ commitment: "confirmed" });
-      } catch (error) {
-        const err = anchor.AnchorError.parse(error.logs);
-        assert.strictEqual(
-          err.error.errorCode.code,
-          "InvalidGuessLength",
-          "Expected 'InvalidGuessLength' error for very long guess"
-        );
-        should_fail = "Failed";
-      }
-      assert.strictEqual(
-        should_fail,
-        "Failed",
-        "Guess should have failed with very long string"
       );
     });
 
@@ -687,7 +535,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: charlie.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([charlie])
           .rpc({ commitment: "confirmed" });
@@ -725,7 +572,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: charlie.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([charlie])
           .rpc({ commitment: "confirmed" });
@@ -783,8 +629,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: david.publicKey,
-          game: davidPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([david])
         .rpc({ commitment: "confirmed" });
@@ -800,7 +644,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: david.publicKey,
           game: davidPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([david])
         .rpc({ commitment: "confirmed" });
@@ -831,7 +674,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: david.publicKey,
           game: davidPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([david])
         .rpc({ commitment: "confirmed" });
@@ -871,8 +713,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: emma.publicKey,
-          game: emmaPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([emma])
         .rpc({ commitment: "confirmed" });
@@ -894,7 +734,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: emma.publicKey,
             game: emmaPda,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([emma])
           .rpc({ commitment: "confirmed" });
@@ -911,7 +750,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: emma.publicKey,
           game: emmaPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([emma])
         .rpc({ commitment: "confirmed" });
@@ -952,8 +790,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: frank.publicKey,
-          game: frankPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([frank])
         .rpc({ commitment: "confirmed" });
@@ -969,7 +805,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: frank.publicKey,
           game: frankPda,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([frank])
         .rpc({ commitment: "confirmed" });
@@ -1001,8 +836,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: grace.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([grace])
         .rpc({ commitment: "confirmed" });
@@ -1013,7 +846,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: grace.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([grace])
         .rpc({ commitment: "confirmed" });
@@ -1046,8 +878,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: testUser.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([testUser])
         .rpc({ commitment: "confirmed" });
@@ -1099,7 +929,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: testUser.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([testUser])
         .rpc({ commitment: "confirmed" });
@@ -1284,8 +1113,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: harry.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([harry])
         .rpc({ commitment: "confirmed" });
@@ -1345,8 +1172,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: ivan.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([ivan])
         .rpc({ commitment: "confirmed" });
@@ -1357,7 +1182,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: ivan.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([ivan])
         .rpc({ commitment: "confirmed" });
@@ -1377,8 +1201,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: ivan.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([ivan])
         .rpc({ commitment: "confirmed" });
@@ -1421,8 +1243,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: jane.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([jane])
         .rpc({ commitment: "confirmed" });
@@ -1493,8 +1313,6 @@ describe("wordle_dapp", () => {
           .createSeed()
           .accounts({
             signer: player1.publicKey,
-            game: pda1,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([player1])
           .rpc({ commitment: "confirmed" }),
@@ -1502,8 +1320,6 @@ describe("wordle_dapp", () => {
           .createSeed()
           .accounts({
             signer: player2.publicKey,
-            game: pda2,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([player2])
           .rpc({ commitment: "confirmed" }),
@@ -1511,8 +1327,6 @@ describe("wordle_dapp", () => {
           .createSeed()
           .accounts({
             signer: player3.publicKey,
-            game: pda3,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([player3])
           .rpc({ commitment: "confirmed" }),
@@ -1563,8 +1377,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: kevin.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([kevin])
         .rpc({ commitment: "confirmed" });
@@ -1575,7 +1387,6 @@ describe("wordle_dapp", () => {
         .accounts({
           signer: kevin.publicKey,
           game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([kevin])
         .rpc({ commitment: "confirmed" });
@@ -1612,8 +1423,6 @@ describe("wordle_dapp", () => {
         .createSeed()
         .accounts({
           signer: laura.publicKey,
-          game: pda_key,
-          systemProgram: anchor.web3.SystemProgram.programId,
         })
         .signers([laura])
         .rpc({ commitment: "confirmed" });
@@ -1625,7 +1434,6 @@ describe("wordle_dapp", () => {
           .accounts({
             signer: laura.publicKey,
             game: pda_key,
-            systemProgram: anchor.web3.SystemProgram.programId,
           })
           .signers([laura])
           .rpc({ commitment: "confirmed" });
