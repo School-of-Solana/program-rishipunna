@@ -80,7 +80,7 @@ export function WordleGame() {
 
         {/* Keyboard and Status Card */}
         <Card className="self-center">
-          <CardContent>
+          <CardContent className="space-y-4">
             <Keyboard
               correctPos={gameData?.correctCharPos}
               correctNotPos={gameData?.correctCharNotPos}

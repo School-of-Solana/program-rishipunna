@@ -1,6 +1,6 @@
 # Project Description
 
-**Deployed Frontend URL:** [TODO: Link to your deployed frontend]
+**Deployed Frontend URL:** https://wordle-dapp.vercel.app/
 
 **Solana Program ID:** 8v1HDhJ5EmQRUWtr8tyoVE9qmXK1eLpB38CBj5HfZG2U
 
