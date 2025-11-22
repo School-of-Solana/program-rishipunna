@@ -6,6 +6,9 @@ import { useWallet } from '@solana/wallet-adapter-react'
 import clsx from 'clsx'
 import { CounterCreate } from './counter-ui'
 import { toast } from 'sonner'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Delete, CornerDownLeft } from 'lucide-react'
 
 export function WordleGame() {
   const { gameQuery, progressGameMutation } = useCounterProgram()
@@ -21,9 +24,12 @@ export function WordleGame() {
     setIsSubmitting(true)
 
     try {
+      if (!publicKey) {
+        toast('Please connect your wallet')
+        return
+      }
       await progressGameMutation.mutateAsync({
         guess: currentGuess,
-        owner: publicKey,
       })
     } catch (error) {
       toast('Guess submission cancelled..')
@@ -56,34 +62,41 @@ export function WordleGame() {
   if (gameQuery.isLoading) return <div>Loading game...</div>
 
   return (
-    <div className="flex flex-col  md:lg:flex-row items-center justify-center gap-5">
-      <div className="grid gap-5 items-center justify-start h-full p-5 bg-gray-900 rounded-xl">
-        <CounterCreate />
-        <WordGrid
-          tries={gameQuery.data?.tries}
-          correctPos={gameQuery.data?.correctCharPos}
-          correctNotPos={gameQuery.data?.correctCharNotPos}
-          guesses={gameQuery.data?.guesses}
-          currentGuess={currentGuess}
-          revealIndex={revealIndex}
-        />
-      </div>
+    <div className="container mx-auto px-4 py-4">
+      <div className="grid gap-4  items-start">
+        {/* Game Grid Card */}
+        <Card className="py-4 bg-transparent border-none">
+          <CardContent className="space-y-4 ">
+            <CounterCreate />
+            <WordGrid
+              tries={gameQuery.data?.tries}
+              correctPos={gameQuery.data?.correctCharPos}
+              correctNotPos={gameQuery.data?.correctCharNotPos}
+              guesses={gameQuery.data?.guesses}
+              currentGuess={currentGuess}
+              revealIndex={revealIndex}
+            />
+          </CardContent>
+        </Card>
 
-      <div className=" flex-1 grid grid-flow-row bg-gray-900 gap-2 items-around justify-around rounded-xl h-full w-fit p-5 sm:w-fit md:w-fit lg:w-fit">
-        <Keyboard
-          correctPos={gameQuery.data?.correctCharPos}
-          correctNotPos={gameQuery.data?.correctCharNotPos}
-          guesses={gameQuery.data?.guesses}
-          usedLetters={currentGuess.split('')}
-          onKeyPress={(letter) => {
-            if (currentGuess.length < 5) {
-              setCurrentGuess((g) => g + letter)
-            }
-          }}
-          onBackspace={() => setCurrentGuess((g) => g.slice(0, -1))}
-          onEnter={submitGuess}
-        />
-        <GameStatus game={gameQuery.data} />
+        {/* Keyboard and Status Card */}
+        <Card className="py-4 self-center w-full max-w-full">
+          <CardContent className="space-y-4 px-2 sm:px-4">
+            <Keyboard
+              correctPos={gameQuery.data?.correctCharPos}
+              correctNotPos={gameQuery.data?.correctCharNotPos}
+              guesses={gameQuery.data?.guesses}
+              onKeyPress={(letter: string) => {
+                if (currentGuess.length < 5) {
+                  setCurrentGuess((g) => g + letter)
+                }
+              }}
+              onBackspace={() => setCurrentGuess((g) => g.slice(0, -1))}
+              onEnter={submitGuess}
+            />
+            <GameStatus game={gameQuery.data} />
+          </CardContent>
+        </Card>
       </div>
 
       {!gameQuery.data?.isSolved && gameQuery.data?.tries < 6 && (
@@ -99,59 +112,72 @@ export function WordleGame() {
   )
 }
 
-export function WordGrid({ guesses, correctPos, correctNotPos, currentGuess, tries, revealIndex }) {
+export function WordGrid({
+  guesses,
+  correctPos,
+  correctNotPos,
+  currentGuess,
+  tries,
+  revealIndex,
+}: {
+  guesses: string[]
+  correctPos: boolean[][]
+  correctNotPos: boolean[][]
+  currentGuess: string
+  tries: number
+  revealIndex: number
+}) {
   const totalRows = 6
   const [showContent, setShowContent] = useState(false)
 
-  // p-5 bg-gray-900 rounded-xl
   return (
-    <div className="">
-      <div className="grid grid-rows-6 gap-2 items-center justify-center">
-        {Array.from({ length: totalRows }).map((_, rowIndex) => {
-          const guess = guesses[rowIndex] || ''
-          const isPastGuess = rowIndex < tries
-          const isCurrentRow = rowIndex === tries
+    <div className="grid grid-rows-6 gap-1.5 items-center justify-center">
+      {Array.from({ length: totalRows }).map((_, rowIndex) => {
+        const guess = guesses[rowIndex] || ''
+        const isPastGuess = rowIndex < tries
+        const isCurrentRow = rowIndex === tries
 
-          return (
-            <div
-              key={rowIndex}
-              className={clsx('grid grid-cols-5 gap-2 items-center justify-center')}
-              style={{
-                animationDelay: '1s',
-              }}
-            >
-              {Array.from({ length: 5 }).map((_, col) => {
-                let letter = ''
-                let bg = 'bg-gray-800 rounded-full'
-                // const isRevealedTile = isPastGuess && rowIndex === tries - 1;
-                let delay = 0 // seconds
-                if (rowIndex === tries - 1) delay = 0.4 * col
+        return (
+          <div
+            key={rowIndex}
+            className={clsx('grid grid-cols-5 gap-1.5 items-center justify-center')}
+            style={{
+              animationDelay: '1s',
+            }}
+          >
+            {Array.from({ length: 5 }).map((_, col) => {
+              let letter = ''
+              let bg = 'bg-gray-800 rounded-full'
+              // const isRevealedTile = isPastGuess && rowIndex === tries - 1;
+              let delay = 0 // seconds
+              if (rowIndex === tries - 1) delay = 0.4 * col
 
-                if (isPastGuess) {
-                  // Completed guess
-                  letter = guess[col]
-                  if (correctPos[rowIndex][col]) bg = 'animate-tile-bounce'
-                  else if (correctNotPos[rowIndex][col]) bg = 'animate-tile-bounce'
-                  else bg = 'animate-tile-bounce'
-                }
+              if (isPastGuess) {
+                // Completed guess
+                letter = guess[col]
+                if (correctPos[rowIndex][col]) bg = 'animate-tile-bounce'
+                else if (correctNotPos[rowIndex][col]) bg = 'animate-tile-bounce'
+                else bg = 'animate-tile-bounce'
+              }
 
-                if (isCurrentRow) {
-                  // Current guess (uncolored)
-                  bg = 'bg-gray-80 rounded-full'
-                  letter = currentGuess[col] || ''
-                }
+              if (isCurrentRow) {
+                // Current guess (uncolored)
+                bg = 'bg-gray-80 rounded-full'
+                letter = currentGuess[col] || ''
+              }
 
-                // setTimeout((""), 3000);
+              // setTimeout((""), 3000);
 
-                return (
-                  <div
-                    key={col}
-                    className={clsx(
-                      'size-12 border border-gray-500 flex items-center justify-center text-xl font-bold uppercase transition-all duration-500 rounded-full',
-                      bg,
-                      rowIndex == tries - 1 ? `delay-${col * 100}` : '',
-                    )}
-                    style={{
+              return (
+                <div
+                  key={col}
+                  className={clsx(
+                    'size-10 sm:size-11 md:size-12 border border-border flex items-center justify-center text-lg font-bold uppercase transition-all duration-500 rounded-full',
+                    bg,
+                    rowIndex == tries - 1 ? `delay-${col * 100}` : '',
+                  )}
+                  style={
+                    {
                       animationDelay: `${delay}s`,
                       '--final-color': correctPos[rowIndex][col]
                         ? '#16a34a' // green-600
@@ -163,29 +189,43 @@ export function WordGrid({ guesses, correctPos, correctNotPos, currentGuess, tri
                         : correctNotPos[rowIndex][col]
                           ? '20%' // yellow-600
                           : '50%', // gray-600
-                    }}
-                  >
-                    {letter}
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })}
-      </div>
+                    } as React.CSSProperties
+                  }
+                >
+                  {letter}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
     </div>
   )
 }
 
 const KEYS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM']
 
-export function Keyboard({ guesses, correctPos, correctNotPos, onKeyPress, onBackspace, onEnter }) {
+export function Keyboard({
+  guesses,
+  correctPos,
+  correctNotPos,
+  onKeyPress,
+  onBackspace,
+  onEnter,
+}: {
+  guesses: string[]
+  correctPos: boolean[][]
+  correctNotPos: boolean[][]
+  onKeyPress: (letter: string) => void
+  onBackspace: () => void
+  onEnter: () => void
+}) {
   const green = new Set<string>()
   const yellow = new Set<string>()
   const gray = new Set<string>()
 
-  guesses.forEach((guess, rowIndex) => {
-    guess.split('').forEach((letter, col) => {
+  guesses.forEach((guess: string, rowIndex: number) => {
+    guess.split('').forEach((letter: string, col: number) => {
       if (correctPos[rowIndex][col]) {
         green.add(letter)
       } else if (correctNotPos[rowIndex][col]) {
@@ -208,61 +248,70 @@ export function Keyboard({ guesses, correctPos, correctNotPos, onKeyPress, onBac
     if (green.has(letter)) return 'animate-tile-bounce'
     if (yellow.has(letter)) return 'animate-tile-bounce'
     if (gray.has(letter)) return 'animate-tile-bounce'
-    return 'bg-gray-800 rounded-full'
+    return 'bg-muted rounded-full'
   }
 
   return (
-    <div className="flex flex-col gap-2 md:p-5 lg:p-5">
+    <div className="flex flex-col gap-1.5 w-full max-w-full overflow-hidden">
       {KEYS.map((row, idx) => (
-        <div key={idx} className="flex justify-center items-center gap-2 w-full">
+        <div
+          key={idx}
+          className="flex justify-center items-center gap-1 sm:gap-1.5 md:gap-2 w-full"
+          style={{ minWidth: 0 }}
+        >
           {row.split('').map((letter) => (
-            <button
+            <Button
               key={letter}
+              variant="outline"
               onClick={() => onKeyPress(letter)}
-              className={`size-5 sm:size-7 md:size-10 lg:size-12 border text-white font-bold transition-all duration-300 rounded-full ${colorLetter(letter)}`}
-              style={{
-                animationDelay: '2s',
-                '--final-color': green.has(letter)
-                  ? '#00a63e'
-                  : yellow.has(letter)
-                    ? '#d08700'
-                    : gray.has(letter)
-                      ? '#e7000b'
-                      : '#1e2939',
-                '--final-shape': green.has(letter)
-                  ? '20%'
-                  : yellow.has(letter)
+              className={`size-7 sm:size-8 md:size-9 lg:size-10 shrink-0 text-xs sm:text-sm md:text-base font-bold transition-all duration-300 rounded-full p-0 ${colorLetter(letter)}`}
+              style={
+                {
+                  animationDelay: '2s',
+                  '--final-color': green.has(letter)
+                    ? '#00a63e'
+                    : yellow.has(letter)
+                      ? '#d08700'
+                      : gray.has(letter)
+                        ? '#e7000b'
+                        : 'transparent',
+                  '--final-shape': green.has(letter)
                     ? '20%'
-                    : gray.has(letter)
-                      ? '50%'
-                      : '50%',
-                '--final-opacity': green.has(letter)
-                  ? '100%'
-                  : yellow.has(letter)
+                    : yellow.has(letter)
+                      ? '20%'
+                      : gray.has(letter)
+                        ? '50%'
+                        : '50%',
+                  '--final-opacity': green.has(letter)
                     ? '100%'
-                    : gray.has(letter)
-                      ? '50%'
-                      : '100%',
-              }}
+                    : yellow.has(letter)
+                      ? '100%'
+                      : gray.has(letter)
+                        ? '50%'
+                        : '100%',
+                } as React.CSSProperties
+              }
             >
               {letter}
-            </button>
+            </Button>
           ))}
           {idx == 1 && (
-            <button
+            <Button
+              variant="destructive"
               onClick={onBackspace}
-              className="size-5 sm:size-7 md:size-10 lg:size-12 border bg-red-700 rounded text-white"
+              className="size-7 sm:size-8 md:size-9 lg:size-10 shrink-0 rounded-full p-0 ml-0.5 sm:ml-1 md:ml-1.5"
             >
-              ⌫
-            </button>
+              <Delete className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5" />
+            </Button>
           )}
           {idx == 2 && (
-            <button
+            <Button
+              variant="default"
               onClick={onEnter}
-              className="size-5 sm:size-7 md:size-10 lg:size-12 border w-max bg-blue-700 font-bold rounded text-white"
+              className="size-7 sm:size-8 md:size-9 lg:size-10 shrink-0 rounded-full p-0 ml-0.5 sm:ml-1 md:ml-1.5"
             >
-              ⏎
-            </button>
+              <CornerDownLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-4.5 md:w-4.5" />
+            </Button>
           )}
         </div>
       ))}
@@ -270,18 +319,30 @@ export function Keyboard({ guesses, correctPos, correctNotPos, onKeyPress, onBac
   )
 }
 
-export function WordInput({ currentGuess, setCurrentGuess, onSubmit, disabled, gameQuery }) {
+export function WordInput({
+  currentGuess,
+  setCurrentGuess,
+  onSubmit,
+  disabled,
+  gameQuery,
+}: {
+  currentGuess: string
+  setCurrentGuess: (guess: string | ((g: string) => string)) => void
+  onSubmit: (guess: string) => void
+  disabled: boolean
+  gameQuery: any
+}) {
   useEffect(() => {
     if (disabled) return
     const handler = (e: KeyboardEvent) => {
       const key = e.key.toUpperCase()
 
       if (/^[A-Z]$/.test(key) && currentGuess.length < 5) {
-        setCurrentGuess((g) => g + key)
+        setCurrentGuess((g: string) => g + key)
       }
 
       if (key === 'BACKSPACE') {
-        setCurrentGuess((g) => g.slice(0, -1))
+        setCurrentGuess((g: string) => g.slice(0, -1))
       }
 
       if (key === 'ENTER' && currentGuess.length === 5 && !gameQuery.isLoading) {
@@ -296,11 +357,11 @@ export function WordInput({ currentGuess, setCurrentGuess, onSubmit, disabled, g
   return null
 }
 
-export function GameStatus({ game }) {
+export function GameStatus({ game }: { game: any }) {
   if (game.isSolved) {
     return (
       <div
-        className="flex justify-center text-green-400 text-2xl font-bold animate-reveal-animation"
+        className="flex justify-center items-center text-green-600 dark:text-green-400 text-base sm:text-lg font-bold animate-reveal-animation p-3 rounded-lg bg-green-50 dark:bg-green-950/20"
         style={{
           animationDelay: '2s',
         }}
@@ -312,8 +373,8 @@ export function GameStatus({ game }) {
 
   if (game.tries >= 6) {
     return (
-      <div className="flex justify-center text-red-400 text-xl font-bold">
-        ❌ Game Over — The correct word was: {game.solution}
+      <div className="flex justify-center items-center text-red-600 dark:text-red-400 text-sm sm:text-base font-bold p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
+        ❌ Game Over — The correct word was: <span className="ml-2 font-mono">{game.solution}</span>
       </div>
     )
   }
@@ -321,6 +382,6 @@ export function GameStatus({ game }) {
   return null
 }
 
-export function ResetGuess({ setCurrentGuess }) {
+export function ResetGuess({ setCurrentGuess }: { setCurrentGuess: (guess: string) => void }) {
   setCurrentGuess('')
 }

@@ -81,17 +81,14 @@ export function useCounterProgram() {
       const accountInfo = await connection.getAccountInfo(gamePda)
 
       if (!accountInfo) {
-        return program.methods
-          .createSeed()
-          .accounts({ signer: publicKey, game: gamePda, system_program: web3.SystemProgram.programId })
-          .rpc()
+        return program.methods.createSeed().accounts({ signer: publicKey }).rpc()
       } else {
         toast.error('PDA already exists. Delete it before recreating it.')
       }
     },
     onSuccess: async (tx) => {
       toast.success('Game initialized!')
-      queryClient.invalidateQueries(['game', publicKey?.toBase58(), programId.toBase58()])
+      queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
     onError: () => toast.error('Failed to initialize game'),
   })
@@ -107,15 +104,12 @@ export function useCounterProgram() {
       const accountInfo = await connection.getAccountInfo(gamePda)
       if (!accountInfo) toast.error('Game does not exist!')
       else {
-        return program.methods
-          .removeGame()
-          .accounts({ signer: publicKey, game: gamePda, system_program: web3.SystemProgram.programId })
-          .rpc()
+        return program.methods.removeGame().accounts({ signer: publicKey, game: gamePda }).rpc()
       }
     },
     onSuccess: async () => {
       toast.success('Game removed!')
-      queryClient.invalidateQueries(['game', publicKey?.toBase58(), programId.toBase58()])
+      queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
     onError: (err: any) => toast.error(err.message || 'Failed to remove game'),
   })
@@ -125,30 +119,27 @@ export function useCounterProgram() {
   // -------------------------
   const progressGameMutation = useMutation({
     mutationKey: ['counter', 'progress', { cluster }],
-    mutationFn: async (data: { guess: string; owner: PublicKey }) => {
+    mutationFn: async (data: { guess: string }) => {
       toast.message('Sending guess...')
+      if (!publicKey) throw new Error('Wallet not connected')
       const [gameAddress] = PublicKey.findProgramAddressSync(
-        [Buffer.from(wordle_seed), data.owner.toBuffer()],
+        [Buffer.from(wordle_seed), publicKey?.toBuffer()],
         programId,
       )
       const gameAccount = await connection.getAccountInfo(gameAddress)
 
       if (!gameAccount) {
         toast.error('Game PDA does not exist')
-        // throw new Error("Game PDA does not exist");
       }
 
       // Await the transaction
-      const tx = await program.methods
-        .progressGame(data.guess)
-        .accounts({ signer: data.owner, game: gameAddress })
-        .rpc()
+      const tx = await program.methods.progressGame(data.guess).accounts({ signer: publicKey, game: gameAddress }).rpc()
 
       return tx
     },
     onSuccess: async (tx) => {
       toast.success('Guess sent')
-      await utils.invalidateQueries(['game', publicKey?.toBase58(), programId.toBase58()])
+      await utils.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
     onError: (err: any) => {
       // console.error("progressGameMutation error:", err);
