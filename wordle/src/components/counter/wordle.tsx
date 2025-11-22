@@ -62,8 +62,8 @@ export function WordleGame() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-4">
-      <div className="grid gap-4 items-start">
+    <div className="container mx-auto">
+      <div className="grid lg:grid-cols-2 gap-2 items-start">
         {/* Game Grid Card */}
         <Card className="border-none bg-transparent">
           <CardContent className="space-y-4">
@@ -79,7 +79,7 @@ export function WordleGame() {
         </Card>
 
         {/* Keyboard and Status Card */}
-        <Card>
+        <Card className="self-centerborder">
           <CardContent>
             <Keyboard
               correctPos={gameData?.correctCharPos}
@@ -252,7 +252,7 @@ export function Keyboard({
   }
 
   return (
-    <div className="flex flex-col gap-1.5 w-full max-w-full overflow-hidden">
+    <div className="flex flex-col gap-1.5 w-full max-w-full ">
       {KEYS.map((row, idx) => (
         <div
           key={idx}

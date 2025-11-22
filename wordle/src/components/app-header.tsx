@@ -4,7 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Menu, X } from 'lucide-react'
-import { ThemeSelect } from '@/components/theme-select'
 import { ClusterUiSelect } from './cluster/cluster-ui'
 import { WalletButton } from '@/components/solana/solana-provider'
 
@@ -17,63 +16,104 @@ export function AppHeader({ links = [] }: { links: { label: string; path: string
   }
 
   return (
-    <header className="relative z-50 px-4 py-2 bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-400">
-      <div className="mx-auto flex justify-between items-center">
-        <div className="flex items-baseline gap-4">
-          <Link className="text-xl hover:text-neutral-500 dark:hover:text-white" href="/">
-            <span>Wordle</span>
-          </Link>
-          <div className="hidden md:flex items-center">
-            <ul className="flex gap-4 flex-nowrap items-center">
-              {links.map(({ label, path }) => (
-                <li key={path}>
-                  <Link
-                    className={`hover:text-neutral-500 dark:hover:text-white ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''}`}
-                    href={path}
-                  >
-                    {label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+    <header className="sticky top-0 z-50 w-full px-4 sm:px-6 lg:px-8 pt-4">
+      <div className="mx-auto max-w-7xl">
+        <div className="flex h-16 items-center justify-between px-6 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-950/70 backdrop-blur-lg shadow-lg">
+          {/* Logo and Navigation */}
+          <div className="flex items-center gap-8">
+            <Link
+              className="text-xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100 hover:text-neutral-700 dark:hover:text-neutral-300 transition-colors"
+              href="/"
+            >
+              Wordle
+            </Link>
+
+            {/* Desktop Navigation */}
+            {links.length > 0 && (
+              <nav className="hidden md:flex items-center">
+                <ul className="flex items-center gap-1">
+                  {links.map(({ label, path }) => (
+                    <li key={path}>
+                      <Link
+                        className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                          isActive(path)
+                            ? 'text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                        href={path}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+          </div>
+
+          {/* Right Side Actions */}
+          <div className="flex items-center gap-2">
+            {/* Desktop Actions */}
+            <div className="hidden md:flex items-center gap-2">
+              <WalletButton />
+              <ClusterUiSelect />
+            </div>
+
+            {/* Mobile Menu Button */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden h-9 w-9"
+              onClick={() => setShowMenu(!showMenu)}
+              aria-label="Toggle menu"
+            >
+              {showMenu ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
           </div>
         </div>
+      </div>
 
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setShowMenu(!showMenu)}>
-          {showMenu ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </Button>
+      {/* Mobile Menu */}
+      {showMenu && (
+        <div className="md:hidden mt-2 rounded-xl border border-neutral-200/50 dark:border-neutral-800/50 bg-white/70 dark:bg-neutral-950/70 backdrop-blur-lg shadow-lg">
+          <div className="px-6 py-4 space-y-4">
+            {/* Mobile Navigation Links */}
+            {links.length > 0 && (
+              <nav>
+                <ul className="space-y-1">
+                  {links.map(({ label, path }) => (
+                    <li key={path}>
+                      <Link
+                        className={`block px-3 py-2 text-base font-medium rounded-md transition-colors ${
+                          isActive(path)
+                            ? 'text-neutral-900 dark:text-neutral-100 bg-neutral-100 dark:bg-neutral-800'
+                            : 'text-neutral-600 dark:text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                        }`}
+                        href={path}
+                        onClick={() => setShowMenu(false)}
+                      >
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
 
-        <div className="hidden md:flex items-center gap-4">
-          <WalletButton />
-          <ClusterUiSelect />
-          <ThemeSelect />
-        </div>
-
-        {showMenu && (
-          <div className="md:hidden fixed inset-x-0 top-[52px] bottom-0 bg-neutral-100/95 dark:bg-neutral-900/95 backdrop-blur-sm">
-            <div className="flex flex-col p-4 gap-4 border-t dark:border-neutral-800">
-              <ul className="flex flex-col gap-4">
-                {links.map(({ label, path }) => (
-                  <li key={path}>
-                    <Link
-                      className={`hover:text-neutral-500 dark:hover:text-white block text-lg py-2  ${isActive(path) ? 'text-neutral-500 dark:text-white' : ''} `}
-                      href={path}
-                      onClick={() => setShowMenu(false)}
-                    >
-                      {label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              <div className="flex flex-col gap-4">
+            {/* Mobile Actions */}
+            <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Wallet</span>
                 <WalletButton />
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">Cluster</span>
                 <ClusterUiSelect />
-                <ThemeSelect />
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   )
 }
