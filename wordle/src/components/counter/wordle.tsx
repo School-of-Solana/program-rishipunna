@@ -4,11 +4,13 @@ import { useState, useEffect } from 'react'
 import { useCounterProgram } from './counter-data-access'
 import { useWallet } from '@solana/wallet-adapter-react'
 import clsx from 'clsx'
-import { CounterCreate } from './counter-ui'
+import { WordleAction } from './wordle-action'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Delete, CornerDownLeft } from 'lucide-react'
+import { Delete, CornerDownLeft, Gamepad2 } from 'lucide-react'
+import { useConfettiSideCannons, useConfettiEmoji } from '@/components/ui/confetti'
+import { Empty } from '@/components/ui/empty'
 
 export function WordleGame() {
   const { gameQuery, progressGameMutation } = useCounterProgram()
@@ -61,13 +63,35 @@ export function WordleGame() {
 
   if (gameQuery.isLoading) return <div>Loading game...</div>
 
+  // Check if game exists: has a solution (non-empty string) and query is not in error
+  const hasGame =
+    !gameQuery.isError &&
+    gameQuery.data &&
+    gameQuery.data.solution &&
+    gameQuery.data.solution.length > 0 &&
+    gameQuery.data.solution !== ''
+
+  // Show empty state if no game exists
+  if (!hasGame) {
+    return (
+      <div className="container mx-auto px-4 py-4">
+        <Empty
+          icon={<Gamepad2 className="h-12 w-12" />}
+          title="No game found"
+          description="Create a new Wordle game to start playing. You'll have 6 tries to guess the 5-letter word!"
+          action={<WordleAction />}
+        />
+      </div>
+    )
+  }
+
   return (
     <div className="container mx-auto px-4 py-4">
       <div className="grid gap-4  items-start">
         {/* Game Grid Card */}
         <Card className="py-4 bg-transparent border-none">
           <CardContent className="space-y-4 ">
-            <CounterCreate />
+            <WordleAction />
             <WordGrid
               tries={gameQuery.data?.tries}
               correctPos={gameQuery.data?.correctCharPos}
@@ -358,20 +382,34 @@ export function WordInput({
 }
 
 export function GameStatus({ game }: { game: any }) {
-  if (game.isSolved) {
-    return (
-      <div
-        className="flex justify-center items-center text-green-600 dark:text-green-400 text-base sm:text-lg font-bold animate-reveal-animation p-3 rounded-lg bg-green-50 dark:bg-green-950/20"
-        style={{
-          animationDelay: '2s',
-        }}
-      >
-        🎉 You solved it!
-      </div>
-    )
-  }
+  const { fire: fireSuccessConfetti } = useConfettiSideCannons()
+  const { fire: fireFailConfetti } = useConfettiEmoji()
+  const [hasFiredConfetti, setHasFiredConfetti] = useState(false)
 
-  if (game.tries >= 6) {
+  useEffect(() => {
+    if (game?.isSolved && !hasFiredConfetti) {
+      // Delay confetti slightly to let the tile animations complete
+      fireSuccessConfetti()
+      setHasFiredConfetti(true)
+    }
+  }, [game?.isSolved, hasFiredConfetti, fireSuccessConfetti])
+
+  useEffect(() => {
+    // Fire crying emoji confetti when game is failed (6 tries used, not solved)
+    if (game?.tries >= 6 && !game?.isSolved && !hasFiredConfetti) {
+      fireFailConfetti()
+      setHasFiredConfetti(true)
+    }
+  }, [game?.tries, game?.isSolved, hasFiredConfetti, fireFailConfetti])
+
+  // Reset confetti flag when game changes
+  useEffect(() => {
+    if (!game?.isSolved && game?.tries < 6) {
+      setHasFiredConfetti(false)
+    }
+  }, [game?.isSolved, game?.tries])
+
+  if (game?.tries >= 6 && !game?.isSolved) {
     return (
       <div className="flex justify-center items-center text-red-600 dark:text-red-400 text-sm sm:text-base font-bold p-3 rounded-lg bg-red-50 dark:bg-red-950/20">
         ❌ Game Over — The correct word was: <span className="ml-2 font-mono">{game.solution}</span>

@@ -54,7 +54,15 @@ export function useCounterProgram() {
     queryFn: async () => {
       if (!publicKey) throw new Error('Wallet not connected')
       const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
-      return program.account.newGame.fetch(gamePda)
+      try {
+        return await program.account.newGame.fetch(gamePda)
+      } catch (error: any) {
+        // If account doesn't exist, return default data
+        if (error.message?.includes('Account does not exist') || error.message?.includes('not found')) {
+          return defaultGameData
+        }
+        throw error
+      }
     },
     enabled: !!publicKey && !!program,
     refetchOnWindowFocus: false,
@@ -75,7 +83,7 @@ export function useCounterProgram() {
   // -------------------------
   const initialize = useMutation({
     mutationFn: async () => {
-      toast.message('Initializing PDA...')
+      toast.message('Creating a new game')
       if (!publicKey) throw new Error('Wallet not connected')
       const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
       const accountInfo = await connection.getAccountInfo(gamePda)
@@ -83,14 +91,14 @@ export function useCounterProgram() {
       if (!accountInfo) {
         return program.methods.createSeed().accounts({ signer: publicKey }).rpc()
       } else {
-        toast.error('PDA already exists. Delete it before recreating it.')
+        toast.error('Game already exists. Exit it before creating a new one.')
       }
     },
     onSuccess: async (tx) => {
-      toast.success('Game initialized!')
+      toast.success('Game created!')
       queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
     },
-    onError: () => toast.error('Failed to initialize game'),
+    onError: () => toast.error('Failed to create game'),
   })
 
   // -------------------------
@@ -98,7 +106,7 @@ export function useCounterProgram() {
   // -------------------------
   const exitGameMutation = useMutation({
     mutationFn: async () => {
-      toast.message('Removing PDA...')
+      toast.message('Exiting the game')
       if (!publicKey) throw new Error('Wallet not connected')
       const [gamePda] = PublicKey.findProgramAddressSync([Buffer.from(wordle_seed), publicKey.toBuffer()], programId)
       const accountInfo = await connection.getAccountInfo(gamePda)
@@ -108,10 +116,9 @@ export function useCounterProgram() {
       }
     },
     onSuccess: async () => {
-      toast.success('Game removed!')
-      queryClient.invalidateQueries({ queryKey: ['game', publicKey?.toBase58(), programId.toBase58()] })
+      toast.success('Game exited!')
     },
-    onError: (err: any) => toast.error(err.message || 'Failed to remove game'),
+    onError: (err: any) => toast.error(err.message || 'Failed to exit game'),
   })
 
   // -------------------------
